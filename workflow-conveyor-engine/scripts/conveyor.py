@@ -5,6 +5,7 @@ Design goals:
 - single-file JSON state
 - tick = run exactly one step
 - safe-by-default fuse: backup then (optionally) restart
+- optional notification hook (e.g. Telegram) on tick result
 
 This is intentionally small and dependency-free.
 """
@@ -57,7 +58,7 @@ def cmd_init(args):
     state_path = Path(args.state)
     steps = json.loads(Path(args.steps_json).read_text(encoding="utf-8"))
     obj = {
-        "wo": args.wo,
+        "flow": args.flow,
         "title": args.title,
         "created_at": now_iso(),
         "updated_at": now_iso(),
@@ -75,7 +76,7 @@ def cmd_status(args):
     steps = state.get("steps", [])
     done = cur >= len(steps)
     out = {
-        "wo": state.get("wo"),
+        "flow": state.get("flow"),
         "title": state.get("title"),
         "current_step": cur,
         "total_steps": len(steps),
@@ -86,6 +87,17 @@ def cmd_status(args):
     print(json.dumps(out, ensure_ascii=False, indent=2))
 
 
+def maybe_notify(notify_cmd: Optional[str], payload: Dict[str, Any]) -> None:
+    if not notify_cmd:
+        return
+    # Send JSON on stdin to an external notifier.
+    try:
+        subprocess.run(shlex.split(notify_cmd), input=json.dumps(payload, ensure_ascii=False), text=True)
+    except Exception:
+        # Never fail the conveyor because of notifications.
+        pass
+
+
 def cmd_tick(args):
     state_path = Path(args.state)
     state = read_json(state_path)
@@ -93,7 +105,9 @@ def cmd_tick(args):
     cur = int(state.get("current_step", 0))
 
     if cur >= len(steps):
-        print(json.dumps({"ok": True, "done": True, "message": "already complete"}, ensure_ascii=False))
+        out = {"ok": True, "done": True, "message": "already complete"}
+        print(json.dumps(out, ensure_ascii=False))
+        maybe_notify(args.notify_cmd, {"event": "tick", "result": out, "state": state_path.name})
         return
 
     step = steps[cur]
@@ -133,7 +147,9 @@ def cmd_tick(args):
         state.setdefault("history", []).append(record)
         state["updated_at"] = now_iso()
         write_json_atomic(state_path, state)
-        print(json.dumps({"ok": False, "step": step, "exit_code": p.returncode}, ensure_ascii=False))
+        out = {"ok": False, "step": step, "exit_code": p.returncode}
+        print(json.dumps(out, ensure_ascii=False))
+        maybe_notify(args.notify_cmd, {"event": "tick", "result": out, "state": state_path.name})
         sys.exit(p.returncode)
 
     if verify and isinstance(verify, str):
@@ -145,7 +161,9 @@ def cmd_tick(args):
             state.setdefault("history", []).append(record)
             state["updated_at"] = now_iso()
             write_json_atomic(state_path, state)
-            print(json.dumps({"ok": False, "step": step, "verify_exit_code": v.returncode}, ensure_ascii=False))
+            out = {"ok": False, "step": step, "verify_exit_code": v.returncode}
+            print(json.dumps(out, ensure_ascii=False))
+            maybe_notify(args.notify_cmd, {"event": "tick", "result": out, "state": state_path.name})
             sys.exit(v.returncode)
 
     # success
@@ -154,17 +172,19 @@ def cmd_tick(args):
     state["current_step"] = cur + 1
     state["updated_at"] = now_iso()
     write_json_atomic(state_path, state)
-    print(json.dumps({"ok": True, "advanced_to": cur + 1, "done": (cur + 1) >= len(steps)}, ensure_ascii=False))
+    out = {"ok": True, "advanced_to": cur + 1, "done": (cur + 1) >= len(steps)}
+    print(json.dumps(out, ensure_ascii=False))
+    maybe_notify(args.notify_cmd, {"event": "tick", "result": out, "state": state_path.name})
 
 
 def cmd_fuse(args):
     state_path = Path(args.state)
     state = read_json(state_path)
-    wo = state.get("wo", "unknown")
+    flow = state.get("flow", "unknown")
 
     backup_dir = Path(args.backup_dir)
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    out = backup_dir / "workflow-conveyor-engine" / str(wo) / f"{ts}.tar.gz"
+    out = backup_dir / "workflow-conveyor-engine" / str(flow) / f"{ts}.tar.gz"
 
     # minimal backup set
     files = [state_path]
@@ -210,7 +230,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("init")
-    p.add_argument("--wo", required=True)
+    p.add_argument("--flow", required=True)
     p.add_argument("--title", required=True)
     p.add_argument("--steps-json", required=True)
     p.add_argument("--state", required=True)
@@ -222,6 +242,7 @@ def main():
 
     p = sub.add_parser("tick")
     p.add_argument("--state", required=True)
+    p.add_argument("--notify-cmd", required=False, help="Optional notifier command; JSON will be sent on stdin")
     p.set_defaults(func=cmd_tick)
 
     p = sub.add_parser("fuse")

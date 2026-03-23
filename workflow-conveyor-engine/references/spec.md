@@ -2,7 +2,7 @@
 
 ## 1. 目標
 
-把「長流程任務」包成一個可落地的狀態機：
+把「長流程任務（Flow）」包成一個可落地的狀態機：
 - 可續跑（中斷後回來繼續）
 - 可重跑（同一步驟重跑不破壞既有成果）
 - 可驗收（每一步有可跑的驗收點）
@@ -14,8 +14,8 @@
 
 ## 2. 狀態檔（state JSON）
 
-每個 WO 一個 state 檔，最小欄位：
-- `wo`：工單 ID
+每個 Flow 一個 state 檔，最小欄位：
+- `flow`：任務 ID
 - `title`
 - `created_at`
 - `updated_at`
@@ -46,7 +46,7 @@
 
 `fuse` 子命令：
 1) 先執行備份：把以下內容打包存檔（最小集合）
-   - WO state JSON
+   - Flow state JSON
    - BOOT.md / MEMORY.md（可選）
    - 相關輸出檔清單（由 state/steps 提供或手動指定）
 2) 備份成功才允許執行 restart command

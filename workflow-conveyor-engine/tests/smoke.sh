@@ -8,7 +8,7 @@ BACKUP_DIR="$(cd "$ROOT/../.." && pwd)/var/backups"
 
 rm -f "$STATE"
 
-python3 "$ROOT/scripts/conveyor.py" init --wo WO-SMOKE --title "smoke test" --steps-json "$STEPS" --state "$STATE" >/dev/null
+python3 "$ROOT/scripts/conveyor.py" init --flow FLOW-SMOKE --title "smoke test" --steps-json "$STEPS" --state "$STATE" >/dev/null
 
 python3 "$ROOT/scripts/conveyor.py" tick --state "$STATE" >/dev/null
 python3 "$ROOT/scripts/conveyor.py" tick --state "$STATE" >/dev/null
