@@ -1,0 +1,14 @@
+[
+  {
+    "id": "step1",
+    "title": "create marker file",
+    "run": "bash -lc 'echo hello > /tmp/wce-step1.txt'",
+    "verify": "bash -lc 'test -s /tmp/wce-step1.txt'"
+  },
+  {
+    "id": "step2",
+    "title": "append marker file",
+    "run": "bash -lc 'echo world >> /tmp/wce-step1.txt'",
+    "verify": "bash -lc 'grep -q world /tmp/wce-step1.txt'"
+  }
+]

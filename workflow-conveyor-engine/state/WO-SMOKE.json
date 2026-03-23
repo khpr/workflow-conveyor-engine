@@ -1,0 +1,53 @@
+{
+  "wo": "WO-SMOKE",
+  "title": "smoke test",
+  "created_at": "2026-03-23T20:12:58+08:00",
+  "updated_at": "2026-03-23T20:12:58+08:00",
+  "current_step": 2,
+  "steps": [
+    {
+      "id": "step1",
+      "title": "create marker file",
+      "run": "bash -lc 'echo hello > /tmp/wce-step1.txt'",
+      "verify": "bash -lc 'test -s /tmp/wce-step1.txt'"
+    },
+    {
+      "id": "step2",
+      "title": "append marker file",
+      "run": "bash -lc 'echo world >> /tmp/wce-step1.txt'",
+      "verify": "bash -lc 'grep -q world /tmp/wce-step1.txt'"
+    }
+  ],
+  "history": [
+    {
+      "at": "2026-03-23T20:12:58+08:00",
+      "step_index": 0,
+      "step_id": "step1",
+      "title": "create marker file",
+      "run": "bash -lc 'echo hello > /tmp/wce-step1.txt'",
+      "verify": "bash -lc 'test -s /tmp/wce-step1.txt'",
+      "ok": true,
+      "stdout": "",
+      "stderr": "",
+      "verify_stdout": "",
+      "verify_stderr": "",
+      "exit_code": 0,
+      "verify_exit_code": 0
+    },
+    {
+      "at": "2026-03-23T20:12:58+08:00",
+      "step_index": 1,
+      "step_id": "step2",
+      "title": "append marker file",
+      "run": "bash -lc 'echo world >> /tmp/wce-step1.txt'",
+      "verify": "bash -lc 'grep -q world /tmp/wce-step1.txt'",
+      "ok": true,
+      "stdout": "",
+      "stderr": "",
+      "verify_stdout": "",
+      "verify_stderr": "",
+      "exit_code": 0,
+      "verify_exit_code": 0
+    }
+  ]
+}
